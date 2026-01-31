@@ -61,7 +61,7 @@ function init(){
 
     varying vec2 vUV;
 
-    #define numOctaves 4
+    #define numOctaves 3
     int randomOctave(in float x)
     {
         return int(floor(x));
@@ -163,7 +163,7 @@ function init(){
             value += noise(freq * x) * amplitude;
 
             // each "octave" is twice the frequency
-            freq *= 4.0;
+            freq *= 2.0;
             amplitude *= gain;
         }
         return value;
@@ -199,8 +199,8 @@ function init(){
         
         float sig = 
             // fbm(p + abs(fbm(vec2(0,iTime * 0.1),H)) * r * 5.0, H);
-            fbm((p + sin(iTime)) + r * 4.0, H);
-            // fbm(p + r,H);
+            // fbm((p + sin(iTime)) + r, H);
+            fbm(p + r,H);
         
         return sig;
     }
@@ -255,20 +255,16 @@ function init(){
         //output values from nested fbm
         vec2 q; vec2 r; vec2 p; vec2 g;
 
-        float basicDualWarp = dualWarp(uv, 0.9, q, r);
+        float basicDualWarp = dualWarp(uv, 0.3, q, r);
 
-        float scaledDualWarp = dualWarp(uv * scale, 0.2, q,r);
+        // float scaledDualWarp = dualWarp(uv * scale, 0.2, q,r);
 
         float basicWarp = warp(uv,0.9);
 
         float texGain = 0.1;
         float gain = 1.0;
 
-        float warp = mix(dualWarp(uv,0.1,q,r), basicDualWarp, (sin(dualWarp(r, 0.9, q,r) + 1.0) * 0.5));
-
-        vec2 vectorWarp = vec2(warp, warp);
-
-        vec2 warpedUV = uv + basicDualWarp * 0.25 + q * warp * r * texGain;
+        vec2 warpedUV = (vec2(0.0,1.0) + (r * dualWarp(uv.yx, 0.1,p,g) + g * 0.1));
         
         float basicVoronoi = smoothVoronoi(uv * 1.0 + iTime);
 
@@ -280,21 +276,23 @@ function init(){
 
         // col = mix(col, vec3(0.05, 0.1, 0.3), 0.5 * smoothstep(0.5,1.5,abs(r.y) + abs(r.x)));
         // col = mix(col, vec3(0.2, 0.125, 0.03), 0.5 * smoothstep(1.1,1.2,abs(p.y) + abs(p.x)));
-        col *= gain * smoothVoronoi(uv * 10.0);
+
+        col *= gain * smoothVoronoi(uv * 25.0 + iTime);
         col += min;
 
-        vec4 chrome = texture2D(iChrome,uv + basicVoronoi * 0.2);
+        vec4 chrome = texture2D(iChrome,warpedUV);
 
         vec4 tex = texture2D(iTexture, warpedUV);
 
-        vec4 fragCol = vec4(col,1.0);
+        vec4 fragCol = vec4(col,1.0) * fbm(q, 0.9);
 
-        // vec4 sig = mix(chrome,tex, fbm(r,0.1 * q.x));
+        vec4 sig = mix(chrome,tex, 0.5);
+        sig = mix(sig, fragCol, 1.0);
 
         // sig = mix(sig, chrome, fbm(uv,0.5) * (q.x + q.y));
         // sig = mix(sig, tex, r.x + r.y);
 
-        fragColor = tex;
+        fragColor = sig;
     }
 
     void main(){
@@ -335,8 +333,8 @@ function init(){
     gl.vertexAttribPointer(
         uv,2, gl.FLOAT, false, 4 * 4, 2 * 4
     );
-    const chrome = loadTexture(gl, "images/chrome.png");
-    const texture = loadTexture(gl, "images/Input4.png");
+    const chrome = loadTexture(gl, "images/spectralmap.png");
+    const texture = loadTexture(gl, "images/chromanellesvisage.png");
 
 
     const chromeLocation = gl.getUniformLocation(program, 'iChrome');
