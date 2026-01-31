@@ -61,7 +61,7 @@ function init(){
 
     varying vec2 vUV;
 
-    #define numOctaves 3   
+    #define numOctaves 4
     int randomOctave(in float x)
     {
         return int(floor(x));
@@ -121,6 +121,23 @@ function init(){
                  du * (u.yx*(va-vb-vc+vd) + vec2(vb,vc) - va));
     }
 
+    float smoothVoronoi(in vec2 x)
+    {
+        ivec2 p = ivec2(floor(x));
+        vec2 f = fract(x);
+
+        float res = 0.0;
+        for(int j = -3; j <= 3; j++){
+        for(int i = -3; i <= 3; i++){
+            ivec2 b = ivec2(i, j);
+            vec2 r = vec2(b) - f + hash(vec2(p) + vec2(b));
+            float d = dot(r,r);
+            res += 1.0/pow(d,8.0);
+        }
+        }
+        return pow(1.0/res, 1.0/16.0);
+    }
+
     //input  and Hurst exponent
     //fractal dimension and power spectrum
     //integrate white noise fractionally, given values 0 to 1
@@ -139,37 +156,19 @@ function init(){
         float value = 0.0;
         for(int i = 0; i < numOctaves; i++)
         {
-            value += gradientNoise(freq * x).z * amplitude;
-            // value += noise(freq * x) * amplitude;
-
-            // each "octave" is twice the frequency
-            freq *= 2.0;
-            amplitude *= gain;
-        }
-        return value;
-    }
-
-    
-    float fbmOcts(in vec2 x, in float H)
-    {
-        // exponential decay of Hurst 
-        float gain = exp2(-H);
-        // wavelength 
-        float freq = 1.0;
-        float amplitude = 1.0;
-        // output 
-        float value = 0.0;
-        for(int i = 0; i < int(numOctaves * 2); i++)
-        {
             // value += gradientNoise(freq * x).z * amplitude;
+
+            // value += smoothVoronoi(freq * x) * amplitude;
+
             value += noise(freq * x) * amplitude;
 
             // each "octave" is twice the frequency
-            freq *= 1.0;
+            freq *= 4.0;
             amplitude *= gain;
         }
         return value;
     }
+
     
     float warp(in vec2 p, in float H)
     {
@@ -262,7 +261,7 @@ function init(){
 
         float basicWarp = warp(uv,0.9);
 
-        float texGain = 1.0;
+        float texGain = 0.1;
         float gain = 1.0;
 
         float warp = mix(dualWarp(uv,0.1,q,r), basicDualWarp, (sin(dualWarp(r, 0.9, q,r) + 1.0) * 0.5));
@@ -270,28 +269,32 @@ function init(){
         vec2 vectorWarp = vec2(warp, warp);
 
         vec2 warpedUV = uv + basicDualWarp * 0.25 + q * warp * r * texGain;
+        
+        float basicVoronoi = smoothVoronoi(uv * 1.0 + iTime);
 
         float min = 0.0;
-        vec3 col = vec3(0.0,0.7,1.0);
+        vec3 col = vec3(1.0,1.0,1.0);
         // vec3 col = vec3(fbm(r * 0.5 + uv * 0.5,abs(sin(-iTime * iRands.x))),fbm(q * 0.5 - uv * 0.5,abs(sin(iTime * iRands.y))),(uv.x + uv.y)) * basicDualWarp;
         // col = vec3(fbm(r * 0.5 + uv * 0.5,abs(sin(-iTime * iRands.x))),fbm(q * 0.5 - uv * 0.5,abs(sin(iTime * iRands.y))),(uv.x + uv.y));
         // col = mix(col, vec3(1.0,1.0,1.0), fbmOcts(uv, abs(fbmOcts(r,abs(sin(iTime))))));
 
         // col = mix(col, vec3(0.05, 0.1, 0.3), 0.5 * smoothstep(0.5,1.5,abs(r.y) + abs(r.x)));
         // col = mix(col, vec3(0.2, 0.125, 0.03), 0.5 * smoothstep(1.1,1.2,abs(p.y) + abs(p.x)));
-        col *= warp * gain;
+        col *= gain * smoothVoronoi(uv * 10.0);
         col += min;
 
-        vec4 chrome = texture2D(iChrome,warpedUV * 0.25);
+        vec4 chrome = texture2D(iChrome,uv + basicVoronoi * 0.2);
 
         vec4 tex = texture2D(iTexture, warpedUV);
 
         vec4 fragCol = vec4(col,1.0);
 
-        vec4 sig = mix(chrome,tex, fbm(uv,0.5));
-        sig = mix(sig, fragCol * 0.25, fbm(uv,0.5) * (q.x + q.y));
-        sig = mix(sig, tex, r.x + r.y);
-        fragColor = sig;
+        // vec4 sig = mix(chrome,tex, fbm(r,0.1 * q.x));
+
+        // sig = mix(sig, chrome, fbm(uv,0.5) * (q.x + q.y));
+        // sig = mix(sig, tex, r.x + r.y);
+
+        fragColor = tex;
     }
 
     void main(){
@@ -333,7 +336,7 @@ function init(){
         uv,2, gl.FLOAT, false, 4 * 4, 2 * 4
     );
     const chrome = loadTexture(gl, "images/chrome.png");
-    const texture = loadTexture(gl, "images/Input3.png");
+    const texture = loadTexture(gl, "images/Input4.png");
 
 
     const chromeLocation = gl.getUniformLocation(program, 'iChrome');
