@@ -156,11 +156,11 @@ function init(){
         float value = 0.0;
         for(int i = 0; i < numOctaves; i++)
         {
-            // value += gradientNoise(freq * x).z * amplitude;
+            value += gradientNoise(freq * x).z * amplitude;
 
             // value += smoothVoronoi(freq * x) * amplitude;
 
-            value += noise(freq * x) * amplitude;
+            // value += noise(freq * x) * amplitude;
 
             // each "octave" is twice the frequency
             freq *= 2.0;
@@ -169,7 +169,6 @@ function init(){
         return value;
     }
 
-    
     float warp(in vec2 p, in float H)
     {
         vec2 q = vec2(fbm(p + vec2(0.0,0.0), H), fbm(p + vec2(0.0,0.0),H));
@@ -183,19 +182,15 @@ function init(){
             
         q.x = 
             fbm(p + vec2(fbm(vec2(iTime * iRands.w * 0.01,iTime * iRands.z * 0.01),H),fbm(vec2(iTime * iRands.y * 0.01,iTime * iRands.x * 0.01),H)), H);
-            // fbm(p + vec2(0.0,0.0), H);
 
         q.y = 
             fbm(p + vec2(fbm(vec2(iTime * iRands.x * 0.01,iTime * iRands.y * 0.01),H),fbm(vec2(iTime * iRands.z * 0.01,iTime * iRands.w * 0.01),H)), H);
-            // fbm(p + vec2(0.0,0.0), H);
 
         r.x = 
             fbm(p + vec2(0.0 + iTime,0.0 + iTime) + q, H);
-            // fbm(p + vec2(0.0,0.0) + q, H); 
 
         r.y = 
             fbm(p + vec2(0.0 + iTime,0.0 + iTime) + q, H);
-            // fbm(p + vec2(0.0,0.0) + q, H);
         
         float sig = 
             // fbm(p + abs(fbm(vec2(0,iTime * 0.1),H)) * r * 5.0, H);
@@ -205,28 +200,22 @@ function init(){
         return sig;
     }
 
-    float dualWarp2(in vec2 p, in float H, out vec2 q, out vec2 r)
+    float dualWarpStatic(in vec2 p, in float H, out vec2 q, out vec2 r)
     {
         q.x = 
-            fbm(p + vec2(fbm(vec2(iTime * iRands.w * 0.01,iTime * iRands.z * 0.01),H),fbm(vec2(iTime * iRands.y * 0.01,iTime * iRands.x * 0.01),H)), H);
-            // fbm(p + vec2(0.0,0.0), H);
+            fbm(p + vec2(0.0,0.0), H);
 
         q.y = 
-            fbm(p + vec2(fbm(vec2(iTime * iRands.x * 0.01,iTime * iRands.y * 0.01),H),fbm(vec2(iTime * iRands.z * 0.01,iTime * iRands.w * 0.01),H)), H);
-            // fbm(p + vec2(0.0,0.0), H);
+            fbm(p + vec2(0.0,0.0), H);
 
         r.x = 
-            fbm(p + vec2(0.0 + iTime,0.0 + iTime) + q, H);
-            // fbm(p + vec2(0.0,0.0) + q, H); 
+            fbm(p + vec2(0.0,0.0) + q, H); 
 
         r.y = 
-            fbm(p + vec2(0.0 + iTime,0.0 + iTime) + q, H);
-            // fbm(p + vec2(0.0,0.0) + q, H);
+            fbm(p + vec2(0.0,0.0) + q, H);
         
         float sig = 
-            // fbm(p + abs(fbm(vec2(0,iTime * 0.1),H)) * r * 5.0, H);
-            fbm((p + sin(iTime)) + r * 2.0, H);
-            // fbm(p + r,H);
+            fbm(p + r,H);
         
         return sig;
     }
@@ -261,33 +250,33 @@ function init(){
 
         float basicWarp = warp(uv,0.9);
 
-        float texGain = 0.1;
+        float texGain = 0.5;
         float gain = 1.0;
 
-        vec2 warpedUV = (vec2(0.0,1.0) + (r * dualWarp(uv.yx, 0.1,p,g) + g * 0.1));
+        // vec2 warpedUV = (uv + (r * dualWarp(uv.yx, 0.5,p,g)));
+        vec2 warpedUV = uv * basicDualWarp;
         
-        float basicVoronoi = smoothVoronoi(uv * 1.0 + iTime);
+        float basicVoronoi = smoothVoronoi(uv * 20.0 + iTime);
 
         float min = 0.0;
         vec3 col = vec3(1.0,1.0,1.0);
         // vec3 col = vec3(fbm(r * 0.5 + uv * 0.5,abs(sin(-iTime * iRands.x))),fbm(q * 0.5 - uv * 0.5,abs(sin(iTime * iRands.y))),(uv.x + uv.y)) * basicDualWarp;
         // col = vec3(fbm(r * 0.5 + uv * 0.5,abs(sin(-iTime * iRands.x))),fbm(q * 0.5 - uv * 0.5,abs(sin(iTime * iRands.y))),(uv.x + uv.y));
-        // col = mix(col, vec3(1.0,1.0,1.0), fbmOcts(uv, abs(fbmOcts(r,abs(sin(iTime))))));
 
         // col = mix(col, vec3(0.05, 0.1, 0.3), 0.5 * smoothstep(0.5,1.5,abs(r.y) + abs(r.x)));
         // col = mix(col, vec3(0.2, 0.125, 0.03), 0.5 * smoothstep(1.1,1.2,abs(p.y) + abs(p.x)));
 
-        col *= gain * smoothVoronoi(uv * 25.0 + iTime);
+        col *= basicDualWarp * gain;
         col += min;
 
         vec4 chrome = texture2D(iChrome,warpedUV);
 
         vec4 tex = texture2D(iTexture, warpedUV);
 
-        vec4 fragCol = vec4(col,1.0) * fbm(q, 0.9);
+        vec4 fragCol = vec4(col,1.0);
 
-        vec4 sig = mix(chrome,tex, 0.5);
-        sig = mix(sig, fragCol, 1.0);
+        vec4 sig = mix(chrome,tex, basicVoronoi * 0.25);
+        sig = mix(sig, fragCol, abs(sin(iTime) * fbm(uv,0.5)));
 
         // sig = mix(sig, chrome, fbm(uv,0.5) * (q.x + q.y));
         // sig = mix(sig, tex, r.x + r.y);
@@ -333,8 +322,8 @@ function init(){
     gl.vertexAttribPointer(
         uv,2, gl.FLOAT, false, 4 * 4, 2 * 4
     );
-    const chrome = loadTexture(gl, "images/spectralmap.png");
-    const texture = loadTexture(gl, "images/chromanellesvisage.png");
+    const chrome = loadTexture(gl, "images/chrome.png");
+    const texture = loadTexture(gl, "images/spectralmap.png");
 
 
     const chromeLocation = gl.getUniformLocation(program, 'iChrome');
