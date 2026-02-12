@@ -1,6 +1,7 @@
     precision highp float;
     uniform vec2 iResolution;
     uniform float iTime;
+    uniform float iValue;
     uniform vec4 iRands;
     uniform sampler2D iChrome;
     uniform sampler2D iTexture;

@@ -1,0 +1,115 @@
+html{
+    overflow: hidden;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+}
+
+#About{
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    padding: 2%;
+}
+
+#aboutHead{
+    -webkit-text-stroke: 1px rgb(0, 0, 0);
+    font-size: 60px;
+    text-align: left;
+    color: rgb(255, 255, 255);
+}
+
+#aboutContent{
+    width: 30%;
+    font-size: 40px;
+
+    -webkit-text-stroke: 0.8px rgb(0, 0, 0);
+    text-align: left;
+    color: rgb(255, 255, 255);
+}
+
+#mantle{
+    position: absolute;
+    left: 50%;
+}
+#conduit{
+     transform: translateX(-50%);
+    width: 600px;
+    height: 600px;
+}
+
+#melt{
+    position: absolute;
+    top: 16%;
+    left: 50%;
+    z-index: -1;
+}
+#skull{
+    transform: translateX(-50%);
+    width: 700px;
+    height: 300px;
+}
+
+#strata{
+    position: absolute;
+    top: 15%;
+    left: 49%;
+    z-index: -2;
+}
+#cut{
+    transform: translateX(-50%);
+    width: 350px;
+    height: 350px;
+}
+
+#linkContainer{
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transform: translateX(-50%);
+    top: 75%;
+    left:52.5%;
+    gap: 10rem;
+}
+
+#bg{
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    z-index: -3;
+}
+
+#portfolio, #sources, #webgl{
+   display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#portHead, #sourcesHead, #glHead{
+    -webkit-text-stroke: 0.5px rgb(0, 0, 0);
+    text-align: center;
+    white-space: nowrap;
+    color: rgb(255, 255, 255);
+}
+
+#portImg, #glImg, #sourcesImg{
+    width: 100px;
+    height: 100px;
+    transition: transform 0.2s ease-out;
+}
+
+#portImg:hover{
+    transform: scale(1.25);
+}
+
+#glImg:hover{
+    transform: scale(1.25);
+}
+
+#sourcesImg:hover{
+    transform: scale(1.25);
+}

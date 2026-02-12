@@ -4,11 +4,15 @@ let chromeTexture, spectraTexture;
 
 let resolution, time, rands;
 
-let index = 4;
+let index = 0;
 
 let start = 0.0;
 
 let renderIndex = null;
+let valueLoc;
+
+let value = 0.0;
+let output = 0.0; 
 
 //ensure canvas/aspect ratio fits to screen 
 function resize(){
@@ -41,6 +45,7 @@ const Shaders = [
         {name: "FBM", path: "Shaders/FBM.frag"},
         {name: "ColorWarp", path: "Shaders/ColorWarp.frag"},
         {name: "Lavalamp", path: "Shaders/Lavalamp.frag"},
+        {name: "test", path: "Shaders/test.frag"},
     ];
 
 //probably useless
@@ -49,8 +54,15 @@ function GetRandomFloat(min, max){
     return Math.random() * range + min;
 }
 
-function main(){
+function setup(){
 
+}
+
+function keyReleased(){
+    Envelope(1000,1);
+}
+
+function main(){
     canvas = document.getElementById("canvas");
     if(canvas == null){
         console.error("canvas null!");
@@ -64,6 +76,8 @@ function main(){
     //initial sizing
     resize();
     window.addEventListener('resize', resize);
+
+    InitMidi();
 
     //lots of shader functions inspired/taken from inigo quilez
 
@@ -102,19 +116,29 @@ function main(){
     //'then' calls the lambda functions after function returns. allows us to use frag returned from shader, but after its not null
     LoadShader(selectedShader.path).then(Frag =>
     {
+        console.log("fragment shader path loaded", selectedShader.path);
         program = CreateShader(gl,Vert,Frag);
+        if(!program){
+            console.error("creating shader failed");
+            return;
+        }
 
         gl.useProgram(program);
         InitAttributes(gl,program);
         InitTextures(gl,program);
         InitUniforms(gl,program);
 
+        let frameCount = 0;
         function render(t){
+            if(frameCount++ === 0){
+                console.log("renderframe init", t);
+            }
             t -= start;
             t *= 0.0001;
             resize();
             gl.clear(gl.COLOR_BUFFER_BIT);
             gl.uniform2f(resolution, canvas.width, canvas.height);
+            gl.uniform1f(valueLoc, value);
             gl.uniform1f(time, t);
             gl.drawArrays(gl.TRIANGLES, 0, 6);
             renderIndex = requestAnimationFrame(render);
@@ -124,14 +148,13 @@ function main(){
 
         renderIndex = requestAnimationFrame(render);
         console.log(renderIndex);
+    })
+    .catch(e => {
+        console.error("failed to load frag", selectedShader.path, e);
     });
-    
+
 }
 //end of main
-
-function keyReleased(){
-    console.log("key released");
-}
 
 function InitAttributes(gl, program)
 {
@@ -185,6 +208,7 @@ function InitUniforms(gl, program){
     resolution = gl.getUniformLocation(program, 'iResolution');
     time = gl.getUniformLocation(program, 'iTime');
     const randomFloats = gl.getUniformLocation(program, 'iRands');
+    valueLoc = gl.getUniformLocation(program, "iValue");
     
     gl.uniform4f(randomFloats, GetRandomFloat(-1.0,1.0), GetRandomFloat(-1.0,1.0), GetRandomFloat(-1.0,1.0), GetRandomFloat(-1.0,1.0));
 }
@@ -288,6 +312,69 @@ function PrevShader(){
 function RefreshShader(){
     main();
 }
+
+function InitMidi(){
+    navigator.permissions.query({ name: "midi", sysex: true }).then((result) => {
+  if (result.state === "granted") {
+    console.log("midi access granted");
+    // Access granted.
+  } else if (result.state === "prompt") {
+    // Using API will prompt for permission
+    console.log("midi access granted");
+  }
+  else{// Permission was denied by user prompt or permission policy
+  console.error("midi access denied");
+  }
+});
+}
+
+function iLerp(a, b, t){
+    return a * (1.0 - t) + b * t;
+}
+
+function Envelope(dur, attack){
+    const starttime = performance.now();
+    // const attacktime = attack * dur;
+
+
+    function update(time){
+        
+        let elapsed = time - starttime;
+        
+        const t = Math.min(elapsed / dur,1);
+
+        // if(elapsed < attacktime)
+        // {
+        //     const a = elapsed / attacktime;
+        //     value = iLerp(0, 1, a);
+        // }
+
+        // else
+        // {
+        //     const decayTime = elapsed - attacktime;
+        //     const decayDur = dur - elapsed || 1;
+        //     const d = Math.min(decayTime / decayDur, 1);
+        //     value = iLerp(1, 0, d);
+        // }
+
+        output += attack * 0.001;
+
+        value = iLerp(value,output,t);
+
+
+        console.log("current value: " + value);  
+
+        if(t < 1){
+            requestAnimationFrame(update)
+        }
+    }
+    requestAnimationFrame(update);
+}
+
+function Increment(dur, target){
+
+}
+
 
 
 document.addEventListener('DOMContentLoaded', main);
