@@ -1,10 +1,16 @@
     precision highp float;
     uniform vec2 iResolution;
     uniform float iTime;
-    uniform float iValue;
     uniform vec4 iRands;
     uniform sampler2D iChrome;
     uniform sampler2D iTexture;
+
+    uniform float iValue;
+
+    uniform float iKnob1;
+    uniform float iKnob2;
+    uniform float iKnob3;
+    uniform float iKnob4;
 
     varying vec2 vUV;
     
@@ -21,10 +27,10 @@
     vec2 hash(in vec2 x)
     {
         vec2 k = vec2(abs(iRands.x) + 1.12324905,abs(iRands.y) + 1.12324905);
-        // vec2 k = vec2(1.985924124,1.12398585910);
+        // vec2 k = vec2(1.985924124,4.12398585910);
 
         x = x*k + k.yx;
-        return -1.0 + 2.0 * fract(0.025 * k * (x.x*x.y *(x.x + x.y)));
+        return -1.0 + 2.0 * fract(16.0 * k * (x.x*x.y *(x.x + x.y)));
     }
 
     float noise(in vec2 x)

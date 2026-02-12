@@ -1,6 +1,6 @@
 
 
-    #define numOctaves 4
+    #define numOctaves 3
     //input  and Hurst exponent
     //fractal dimension and power spectrum
     //integrate white noise fractionally, given values 0 to 1
@@ -26,7 +26,7 @@
             // value += noise(freq * x) * amplitude;
 
             // each "octave" is twice the frequency
-            freq *= 2.0;
+            freq *= 2.0 + ((iKnob1 * 2.0) - 1.0);
             amplitude *= gain;
         }
         return value;
@@ -49,10 +49,10 @@
             fbm(p + vec2(fbm(vec2(iTime * iRands.x * 0.01 + iValue * iRands.x * 0.1,iTime * iRands.y * 0.01 + iValue * iRands.y * 0.1),H),fbm(vec2(iTime * iRands.z * 0.01 + iValue * iRands.z * 0.1,iTime * iRands.w * 0.01 + iValue * iRands.w * 0.1),H)), H);
 
         r.x = 
-            fbm(p + vec2(0.0 + iTime,0.0 - iTime) + q + iValue * 0.1, H);
+            fbm(p + vec2(0.0 + iTime* 0.1,0.0 - iTime* 0.1) + q + iValue * 0.1, H);
 
         r.y = 
-            fbm(p + vec2(0.0 - iTime,0.0 + iTime) + q + iValue * 0.1, H);
+            fbm(p + vec2(0.0 - iTime * 0.1,0.0 + iTime* 0.1) + q + iValue * 0.1, H);
         
         float sig = 
             fbm(p + r + sin(iValue),H);
@@ -101,7 +101,7 @@
         //output values from nested fbm
         vec2 q; vec2 r; vec2 p; vec2 g;
 
-        float basicDualWarp = dualWarp(uv, 0.5 + (abs(sin(iValue)) * 0.25), q, r);
+        float basicDualWarp = dualWarp(uv, iKnob2, q, r);
 
         float basicWarp = warp(uv,0.9);
 
@@ -113,18 +113,18 @@
         float basicVoronoi = smoothVoronoi(uv * 1.0);
 
         float min = 0.0;
-        vec3 col = vec3(0.9,0.75,1.0);
+        vec3 col = vec3(1.0,1.0,1.0);
 
         // col *= basicDualWarp * abs(sin(iTime) * fbm(uv,0.5));    
-        col += min;
+        col *= basicDualWarp;
 
         vec4 chrome = texture2D(iChrome,warpedUV);
 
         vec4 tex = texture2D(iTexture, warpedUV);
 
-        vec4 fragCol = vec4(col,1.0);
+        vec4 fragCol = vec4(col,1.0) * 1.5;
 
-        vec4 sig = mix(chrome,tex, basicVoronoi * 0.5);
+        vec4 sig = mix(chrome,tex, 0.5 + (sin(iValue)) * -0.25);
         // sig = mix(sig, fragCol, abs(sin(iTime) * fbm(uv,0.1)));
 
         fragColor = sig;

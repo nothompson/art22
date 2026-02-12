@@ -11,20 +11,33 @@ let start = 0.0;
 let renderIndex = null;
 let valueLoc;
 
-let value = 0.0;
-let output = 0.0; 
+let incValue = 0.0;
+let increment = 0.0;
 
-//ensure canvas/aspect ratio fits to screen 
-function resize(){
-    let displayWidth = canvas.clientWidth;
-    let displayHeight = canvas.clientHeight;
-    canvas.width = displayWidth;
-    canvas.height = displayHeight
+let envValue = 0.0;
 
-    if(gl != null){
-        gl.viewport(0,0,canvas.width,canvas.height);
-    }
+let midi = null;
+
+let iKnob1 = 0;
+let knob1Loc;
+
+
+let iKnob2 = 0;
+let knob2Loc;
+
+
+let iKnob3 = 0;
+let knob3Loc;
+
+
+let iKnob4 = 0;
+let knob4Loc;
+
+function setup(){
+    //needed for p5 functions
 }
+
+//#region GLSL
 
 async function LoadShader(url){
     //get text from fragment shader 
@@ -47,20 +60,6 @@ const Shaders = [
         {name: "Lavalamp", path: "Shaders/Lavalamp.frag"},
         {name: "test", path: "Shaders/test.frag"},
     ];
-
-//probably useless
-function GetRandomFloat(min, max){
-    let range = max - min;
-    return Math.random() * range + min;
-}
-
-function setup(){
-
-}
-
-function keyReleased(){
-    Envelope(1000,1);
-}
 
 function main(){
     canvas = document.getElementById("canvas");
@@ -138,7 +137,13 @@ function main(){
             resize();
             gl.clear(gl.COLOR_BUFFER_BIT);
             gl.uniform2f(resolution, canvas.width, canvas.height);
-            gl.uniform1f(valueLoc, value);
+            gl.uniform1f(valueLoc, incValue);
+
+            gl.uniform1f(knob1Loc, iKnob1);
+            gl.uniform1f(knob2Loc, iKnob2);
+            gl.uniform1f(knob3Loc, iKnob3);
+            gl.uniform1f(knob4Loc, iKnob4);
+
             gl.uniform1f(time, t);
             gl.drawArrays(gl.TRIANGLES, 0, 6);
             renderIndex = requestAnimationFrame(render);
@@ -187,7 +192,7 @@ function InitAttributes(gl, program)
 
 function InitTextures(gl, program)
 {
-    chromeTexture = loadTexture(gl, "images/chromanellesvisage.png");
+    chromeTexture = loadTexture(gl, "images/chrome.png");
     spectraTexture = loadTexture(gl, "images/spectralmap.png");
 
 
@@ -209,6 +214,11 @@ function InitUniforms(gl, program){
     time = gl.getUniformLocation(program, 'iTime');
     const randomFloats = gl.getUniformLocation(program, 'iRands');
     valueLoc = gl.getUniformLocation(program, "iValue");
+
+    knob1Loc = gl.getUniformLocation(program, "iKnob1");
+    knob2Loc = gl.getUniformLocation(program, "iKnob2");
+    knob3Loc = gl.getUniformLocation(program, "iKnob3");
+    knob4Loc = gl.getUniformLocation(program, "iKnob4");
     
     gl.uniform4f(randomFloats, GetRandomFloat(-1.0,1.0), GetRandomFloat(-1.0,1.0), GetRandomFloat(-1.0,1.0), GetRandomFloat(-1.0,1.0));
 }
@@ -313,6 +323,17 @@ function RefreshShader(){
     main();
 }
 
+//#endregion
+
+//#region Midi
+
+function keyReleased(){
+    Increment(500,2);
+}
+
+//setting up midi from Web MidiAPI 
+//https://developer.mozilla.org/en-US/docs/Web/API/Web_MIDI_API
+
 function InitMidi(){
     navigator.permissions.query({ name: "midi", sysex: true }).then((result) => {
   if (result.state === "granted") {
@@ -328,14 +349,121 @@ function InitMidi(){
 });
 }
 
+function onMidiSuccess(midiAccess){
+    console.log("midi ready");
+    midi = midiAccess;
+    listMidiInputsAndOutputs(midi);
+
+    startLoggingMidiInput(midi);
+}
+
+function onMidiFailure(e){
+    console.error("midi failed", e);
+}
+
+navigator.requestMIDIAccess().then(onMidiSuccess,onMidiFailure);
+
+function listMidiInputsAndOutputs(midiAccess){
+    for(const entry of midiAccess.inputs){
+        const input = entry[1];
+        console.log(
+            `Input port [type: '${input.type}']` + 
+            `id: '${input.id}'`,
+        );
+    }
+
+    for(const entry of midiAccess.outputs){
+        const output = entry[1];
+        console.log(
+            `Output port [type: '${output.type}']` +
+            `id: '${output.id}`,
+        );
+    }
+}
+
+//event data is array of bytes, status (note off), 
+
+function onMidiMessage(event){
+    let str = `midi message received at timestamp: ${event.timeStamp}[${event.data.length} bytes]: `;
+    for(const char of event.data){
+        str += `0x${char.toString(16)}` ;
+    }
+    // console.log(str);
+
+    const [status,note, velocity] = event.data;
+    if((velocity > 0 && status >= 128 && status <= 148)){
+        console.log(`Note Pressed: ${note}`);
+        Increment(500,1);
+    }
+    //knob 1
+    if(status > 148 && event.data[1] == 70){
+        let v = event.data[2];
+        let out = iNormalize(v, 0, 127);
+        console.log("knob 1", out);
+        iKnob1 = out;
+    }
+
+    if(status > 148 && event.data[1] == 71){
+        let v = event.data[2];
+        let out = iNormalize(v, 0, 127);
+        console.log("knob 2", out);
+        iKnob2 = out;
+    }
+
+    if(status > 148 && event.data[1] == 72){
+        let v = event.data[2];
+        let out = iNormalize(v, 0, 127);
+        console.log("knob 3",out);
+        iKnob3 = out;
+    }
+
+    if(status > 148 && event.data[1] == 73){
+        let v = event.data[2];
+        let out = iNormalize(v, 0, 127);
+        console.log("knob 4", out);
+        iKnob4 = out;
+    }
+
+}
+
+function startLoggingMidiInput(midiAccess){
+    midiAccess.inputs.forEach((entry) => {
+        entry.onmidimessage = onMidiMessage;
+    });
+}
+
+//#endregion
+
+
+//#region Functions
+
+//ensure canvas/aspect ratio fits to screen 
+function resize(){
+    let displayWidth = canvas.clientWidth;
+    let displayHeight = canvas.clientHeight;
+    canvas.width = displayWidth;
+    canvas.height = displayHeight
+
+    if(gl != null){
+        gl.viewport(0,0,canvas.width,canvas.height);
+    }
+}
+
+function GetRandomFloat(min, max){
+    let range = max - min;
+    return Math.random() * range + min;
+}
+
+function iNormalize(input, min, max){
+    return ((input - min) / (max - min));
+}
+
 function iLerp(a, b, t){
     return a * (1.0 - t) + b * t;
 }
 
-function Envelope(dur, attack){
+function Increment(dur, target){
     const starttime = performance.now();
-    // const attacktime = attack * dur;
-
 
     function update(time){
         
@@ -343,26 +471,12 @@ function Envelope(dur, attack){
         
         const t = Math.min(elapsed / dur,1);
 
-        // if(elapsed < attacktime)
-        // {
-        //     const a = elapsed / attacktime;
-        //     value = iLerp(0, 1, a);
-        // }
+        let easeOut = t * (2.0 - t * t * t);
+        let easeIn = t * t * t;
 
-        // else
-        // {
-        //     const decayTime = elapsed - attacktime;
-        //     const decayDur = dur - elapsed || 1;
-        //     const d = Math.min(decayTime / decayDur, 1);
-        //     value = iLerp(1, 0, d);
-        // }
+        increment += target * 0.0015;
 
-        output += attack * 0.001;
-
-        value = iLerp(value,output,t);
-
-
-        console.log("current value: " + value);  
+        incValue = iLerp(incValue,increment,easeOut);
 
         if(t < 1){
             requestAnimationFrame(update)
@@ -371,10 +485,40 @@ function Envelope(dur, attack){
     requestAnimationFrame(update);
 }
 
-function Increment(dur, target){
+function Envelope(dur, attack){
+    const starttime = performance.now();
+    const attacktime = attack * dur;
 
+    function update(time){
+        
+        let elapsed = time - starttime;
+        
+        const t = Math.min(elapsed / dur, 1);
+
+        if(elapsed < attacktime)
+        {
+            const a = elapsed / attacktime;
+            envValue = iLerp(0, 1, a);
+        }
+
+        else
+        {
+            const decayTime = elapsed - attacktime;
+            const decayDur = dur - elapsed || 1;
+            const d = Math.min(decayTime / decayDur, 1);
+            envValue = iLerp(1, 0, d);
+        }
+
+
+        console.log("current value: " + envValue);  
+
+        if(t < 1){
+            requestAnimationFrame(update)
+        }
+    }
+    requestAnimationFrame(update);
 }
 
-
+//#endregion
 
 document.addEventListener('DOMContentLoaded', main);
