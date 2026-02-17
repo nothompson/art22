@@ -1,0 +1,45 @@
+html{
+    overflow: scroll;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+}
+
+#bg{
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    z-index: -3;
+}
+
+#linkContainer{
+    position: fixed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    left:50%;
+    transform: translateX(-50%);
+    padding-top: 2%;
+    gap: 2rem;
+}
+
+#week3, #week4, #week5, #week6{
+    text-align: center;
+}
+
+#head3, #head4, #head5, #head6{
+    font-size: 30px;
+    -webkit-text-stroke: 1px rgb(0, 0, 0);
+     color:rgb(212, 162, 255);
+    
+}
+
+#text3, #text4, #text5, #text6{
+    font-size: 20px;
+    -webkit-text-stroke: 0.4px rgb(0, 0, 0);
+    color:rgb(255, 255, 255);
+}   

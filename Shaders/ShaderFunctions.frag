@@ -6,11 +6,12 @@
     uniform sampler2D iTexture;
 
     uniform float iValue;
+    uniform float iEnv;
 
     uniform float iKnob1;
     uniform float iKnob2;
     uniform float iKnob3;
-    uniform float iKnob4;
+    uniform vec2 iKnob4;
 
     varying vec2 vUV;
     

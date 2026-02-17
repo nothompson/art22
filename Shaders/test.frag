@@ -7,7 +7,7 @@
     vec2 scale = vec2(10.0,10.0);
     float gain = 0.75;
 
-    vec3 color = vec3(iValue);
+    vec3 color = vec3(iEnv);
 
     vec4 sig = vec4(color,1.0);
 

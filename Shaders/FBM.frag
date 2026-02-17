@@ -86,12 +86,12 @@ void frag(out vec4 fragColor, in vec2 fragCoord){
 
         float speed = 3.0;
         vec2 dir = vec2(-1.0,1.0);
-        vec2 scale = vec2(20.0);
+        vec2 scale = vec2(1.0);
         float gain = 0.25;
     
         vec3 col = vec3(0.0);
 
-        col += fbm(uv * scale + (iTime * speed), 0.5) * gain;
+        col += fbm(uv * scale + (iTime * speed * iKnob4), 0.5) * gain;
 
         fragColor = vec4(col,1.0);
 }

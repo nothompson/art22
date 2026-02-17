@@ -19,7 +19,7 @@
         float value = 0.0;
         for(int i = 0; i < numOctaves; i++)
         {
-            value += gradientNoise(freq * x).x * amplitude;
+            value += gradientNoise(freq * x).z * amplitude;
 
             // value += smoothVoronoi(freq * x) * amplitude;
 
@@ -49,13 +49,13 @@
             fbm(p + vec2(fbm(vec2(iTime * iRands.x * 0.01 + iValue * iRands.x * 0.1,iTime * iRands.y * 0.01 + iValue * iRands.y * 0.1),H),fbm(vec2(iTime * iRands.z * 0.01 + iValue * iRands.z * 0.1,iTime * iRands.w * 0.01 + iValue * iRands.w * 0.1),H)), H);
 
         r.x = 
-            fbm(p + vec2(0.0 + iTime* 0.1,0.0 - iTime* 0.1) + q + iValue * 0.1, H);
+            fbm(p + vec2(0.0 + iTime * iKnob4.x,0.0 + iTime * iKnob4.y) + q + iValue * 0.1, H);
 
         r.y = 
-            fbm(p + vec2(0.0 - iTime * 0.1,0.0 + iTime* 0.1) + q + iValue * 0.1, H);
+            fbm(p + vec2(0.0 + iTime * iKnob4.x,0.0 + iTime  * iKnob4.y) + q + iValue * 0.1, H);
         
         float sig = 
-            fbm(p + r + sin(iValue),H);
+            fbm(p + r * 1.0 + (sin(iValue) * iKnob3 * 5.0),H);
         
         return sig;
     }
@@ -113,7 +113,7 @@
         float basicVoronoi = smoothVoronoi(uv * 1.0);
 
         float min = 0.0;
-        vec3 col = vec3(1.0,1.0,1.0);
+        vec3 col = vec3(q.x,q.y,r.x);
 
         // col *= basicDualWarp * abs(sin(iTime) * fbm(uv,0.5));    
         col *= basicDualWarp;
@@ -122,10 +122,10 @@
 
         vec4 tex = texture2D(iTexture, warpedUV);
 
-        vec4 fragCol = vec4(col,1.0) * 1.5;
+        vec4 fragCol = vec4(col,1.0);
 
         vec4 sig = mix(chrome,tex, 0.5 + (sin(iValue)) * -0.25);
-        // sig = mix(sig, fragCol, abs(sin(iTime) * fbm(uv,0.1)));
+        sig = mix(sig, fragCol, abs(sin(iTime) * 0.1 + iEnv * 0.035));
 
         fragColor = sig;
     }

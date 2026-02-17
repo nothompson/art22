@@ -9,11 +9,12 @@ let index = 0;
 let start = 0.0;
 
 let renderIndex = null;
-let valueLoc;
 
+let valueLoc;
 let incValue = 0.0;
 let increment = 0.0;
 
+let envValueLoc;
 let envValue = 0.0;
 
 let midi = null;
@@ -30,8 +31,16 @@ let iKnob3 = 0;
 let knob3Loc;
 
 
-let iKnob4 = 0;
+let iKnob4x = 0;
+let iKnob4y = 0;
+
+let context;
+
 let knob4Loc;
+
+let s;
+
+let knob5 = 1.0;
 
 function setup(){
     //needed for p5 functions
@@ -138,11 +147,12 @@ function main(){
             gl.clear(gl.COLOR_BUFFER_BIT);
             gl.uniform2f(resolution, canvas.width, canvas.height);
             gl.uniform1f(valueLoc, incValue);
+            gl.uniform1f(envValueLoc, envValue);
 
             gl.uniform1f(knob1Loc, iKnob1);
             gl.uniform1f(knob2Loc, iKnob2);
             gl.uniform1f(knob3Loc, iKnob3);
-            gl.uniform1f(knob4Loc, iKnob4);
+            gl.uniform2f(knob4Loc, iKnob4x, iKnob4y);
 
             gl.uniform1f(time, t);
             gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -214,6 +224,7 @@ function InitUniforms(gl, program){
     time = gl.getUniformLocation(program, 'iTime');
     const randomFloats = gl.getUniformLocation(program, 'iRands');
     valueLoc = gl.getUniformLocation(program, "iValue");
+    envValueLoc = gl.getUniformLocation(program, "iEnv");
 
     knob1Loc = gl.getUniformLocation(program, "iKnob1");
     knob2Loc = gl.getUniformLocation(program, "iKnob2");
@@ -328,7 +339,7 @@ function RefreshShader(){
 //#region Midi
 
 function keyReleased(){
-    Increment(500,2);
+    // Increment(500,2);
 }
 
 //setting up midi from Web MidiAPI 
@@ -383,6 +394,8 @@ function listMidiInputsAndOutputs(midiAccess){
 
 //event data is array of bytes, status (note off), 
 
+activeVoices = {};
+
 function onMidiMessage(event){
     let str = `midi message received at timestamp: ${event.timeStamp}[${event.data.length} bytes]: `;
     for(const char of event.data){
@@ -391,15 +404,39 @@ function onMidiMessage(event){
     // console.log(str);
 
     const [status,note, velocity] = event.data;
+
+    // active_voices = {};
+
+    //KEYDOWN
     if((velocity > 0 && status >= 128 && status <= 148)){
         console.log(`Note Pressed: ${note}`);
-        Increment(500,1);
+
+        const freq = MidiToFreq(note);
+        console.log("frequency of note",freq);
+
+        Increment(500,3);
+        Envelope(450,0.25);
+
+        var voice = new Voice(freq);
+
+        activeVoices[note] = voice;
+
+        voice.start();
+        // voice.update();
     }
+
+    //KEYRELEASE
+    if(velocity <= 0 && status >= 128 && status <= 148){
+        console.log(`Note released: ${note}`);
+        activeVoices[note].stop();
+        delete activeVoices[note];
+    }
+
     //knob 1
     if(status > 148 && event.data[1] == 70){
         let v = event.data[2];
         let out = iNormalize(v, 0, 127);
-        console.log("knob 1", out);
+        // console.log("knob 1", out);
         iKnob1 = out;
     }
 
@@ -418,10 +455,23 @@ function onMidiMessage(event){
     }
 
     if(status > 148 && event.data[1] == 73){
+        let pi =  3.14159265359;
         let v = event.data[2];
-        let out = iNormalize(v, 0, 127);
-        console.log("knob 4", out);
-        iKnob4 = out;
+        let norm = iNormalize(v, 0, 127) * 360.0;
+
+        // console.log("knob 4", out);
+        let x = cos(norm * pi / 180);
+        let y = sin(norm * pi / 180);
+
+        console.log("knob4", norm, "vector", x,y);
+        iKnob4x = x;
+        iKnob4y = y;
+    }
+
+    if(status > 148 && event.data[1] == 74){
+        knob5 = event.data[2] * 10.0;
+        Object.values(activeVoices).forEach(voice => voice.update(knob5));
+        
     }
 
 }
@@ -434,6 +484,132 @@ function startLoggingMidiInput(midiAccess){
 
 //#endregion
 
+//#region Audio
+
+window.addEventListener('load', initAudioContext, false);
+
+function initAudioContext(){
+    try {
+        context = new AudioContext();
+    }
+    catch(er){
+        alert("web audio not supported!");
+    }
+}
+
+//poly sine
+
+let attack = 0.05;
+let decay = 1.0;
+let sustain = 0.2;
+let release = 0.3;
+
+
+var Voice = (function(){
+    function Voice(frequency){
+        this.frequency = frequency;
+        this.oscillators = [];
+        this.vca = null;
+        this.mod = null;
+};
+
+    Voice.prototype.start = function(){
+        const now = context.currentTime;
+
+        var vco = context.createOscillator();
+        vco.type = 'sine';
+        vco.frequency.value = this.frequency;
+
+        var mod = context.createOscillator();
+        mod.type = 'triangle';
+        mod.frequency.value = (this.frequency);
+
+        var modGain = context.createGain();
+
+        modGain.gain.value = knob5;
+
+        mod.connect(modGain);
+        modGain.connect(vco.frequency);
+        
+        var vca = context.createGain();
+        vca.gain.cancelScheduledValues(now);    
+        vca.gain.setValueAtTime(0.0, now);
+        
+        vca.gain.linearRampToValueAtTime(0.5, now + attack);
+
+        vca.gain.linearRampToValueAtTime(sustain, now + attack + decay);
+
+        vco.connect(vca);
+        vca.connect(context.destination);
+
+        mod.start(now);
+
+        vco.start(now);
+
+
+        this.oscillators.push(vco);
+        this.vca = vca;
+        this.mod = modGain;
+    };
+
+    Voice.prototype.stop = function(){
+            const now = context.currentTime;
+            const current = this.vca.gain.value;
+
+            this.vca.gain.cancelScheduledValues(now);
+            this.vca.gain.setValueAtTime(current,now);
+            this.vca.gain.linearRampToValueAtTime(0.0, now + release);
+
+
+        this.oscillators.forEach(function(osc, _){
+            osc.stop(now + release);
+        })
+    }
+
+    Voice.prototype.update = function(fm){
+        this.mod.gain.value = fm;
+    }
+
+    // Voice.prototype.update = function(freq){
+    //     const now = context.currentTime;
+    //     this.frequency = freq;
+
+    //     this.oscillators.forEach(function(osc, _){
+    //         osc.frequency.setValueAtTime(freq, context.currentTime);
+    //     })
+    // }
+
+    return Voice;
+
+})(context);
+
+
+//mono sine
+function sine(){
+
+    s = context.createOscillator();
+    var gain = context.createGain();
+
+    s.type = "sine";
+
+    gain.gain.setValueAtTime(0.25, context.currentTime);
+
+    s.connect(gain);
+
+    gain.connect(context.destination);
+}
+
+function onSine(freq){
+    s.frequency.setValueAtTime(freq, context.currentTime);
+    s.start(context.currentTime);
+}
+
+function offSine(){
+    s.stop(context.currentTime);
+}
+
+
+//#endregion
 
 //#region Functions
 
@@ -498,7 +674,7 @@ function Envelope(dur, attack){
         if(elapsed < attacktime)
         {
             const a = elapsed / attacktime;
-            envValue = iLerp(0, 1, a);
+            envValue = iLerp(envValue, 1, a);
         }
 
         else
@@ -506,17 +682,28 @@ function Envelope(dur, attack){
             const decayTime = elapsed - attacktime;
             const decayDur = dur - elapsed || 1;
             const d = Math.min(decayTime / decayDur, 1);
+            const easeOut = d * d * d;
             envValue = iLerp(1, 0, d);
         }
 
-
-        console.log("current value: " + envValue);  
+        // console.log("current value: " + envValue);  
 
         if(t < 1){
             requestAnimationFrame(update)
         }
+        else{
+            envValue = 0.0;
+        }
     }
     requestAnimationFrame(update);
+}
+
+function MidiToFreq(note){
+    let freq;
+
+    freq = Math.pow(2,(note - 69)/12) * 440;
+
+    return freq
 }
 
 //#endregion
