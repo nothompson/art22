@@ -42,6 +42,12 @@ let s;
 
 let knob5 = 1.0;
 
+let knob6 = 10000;
+
+let CarrierWave = 'sine';
+
+let ModulatorWave = 'sine';
+
 function setup(){
     //needed for p5 functions
 }
@@ -202,7 +208,7 @@ function InitAttributes(gl, program)
 
 function InitTextures(gl, program)
 {
-    chromeTexture = loadTexture(gl, "images/chrome.png");
+    chromeTexture = loadTexture(gl, "images/chromanellesvisage.png");
     spectraTexture = loadTexture(gl, "images/spectralmap.png");
 
 
@@ -401,14 +407,16 @@ function onMidiMessage(event){
     for(const char of event.data){
         str += `0x${char.toString(16)}` ;
     }
-    // console.log(str);
-
+    
     const [status,note, velocity] = event.data;
 
+    if(status == 217) return;
+
+    console.log(status, note, velocity);
     // active_voices = {};
 
     //KEYDOWN
-    if((velocity > 0 && status >= 128 && status <= 148)){
+    if((velocity > 0 && (status == 128 || status == 144))){
         console.log(`Note Pressed: ${note}`);
 
         const freq = MidiToFreq(note);
@@ -426,10 +434,53 @@ function onMidiMessage(event){
     }
 
     //KEYRELEASE
-    if(velocity <= 0 && status >= 128 && status <= 148){
+    if(velocity <= 0 && (status == 128 || status == 144)){
         console.log(`Note released: ${note}`);
         activeVoices[note].stop();
         delete activeVoices[note];
+    }
+
+    //PAD DOWN
+    if(status == 153){
+        if(note == 37){
+            ModulatorWave = 'sine';
+        }
+
+        if(note == 36){
+            ModulatorWave = 'triangle';
+        }
+
+        if(note == 42){
+            ModulatorWave = 'square';
+        }
+
+        if(note == 54){
+            //pad 4
+        }
+
+        if(note == 40){
+            CarrierWave = 'sine';
+        }
+
+        if(note == 38){
+            CarrierWave = 'triangle';
+        }
+
+        if(note == 46){
+            CarrierWave = 'square';
+        }
+
+        if(note == 44){
+            //pad 8
+        }
+
+
+    }
+
+
+    //PAD UP
+    if(status == 137){
+        // probably wont use..?
     }
 
     //knob 1
@@ -440,6 +491,7 @@ function onMidiMessage(event){
         iKnob1 = out;
     }
 
+     //knob 2
     if(status > 148 && event.data[1] == 71){
         let v = event.data[2];
         let out = iNormalize(v, 0, 127);
@@ -447,6 +499,7 @@ function onMidiMessage(event){
         iKnob2 = out;
     }
 
+     //knob 3
     if(status > 148 && event.data[1] == 72){
         let v = event.data[2];
         let out = iNormalize(v, 0, 127);
@@ -454,6 +507,7 @@ function onMidiMessage(event){
         iKnob3 = out;
     }
 
+     //knob 4
     if(status > 148 && event.data[1] == 73){
         let pi =  3.14159265359;
         let v = event.data[2];
@@ -468,11 +522,27 @@ function onMidiMessage(event){
         iKnob4y = y;
     }
 
+     //knob 5
     if(status > 148 && event.data[1] == 74){
         knob5 = event.data[2] * 10.0;
-        Object.values(activeVoices).forEach(voice => voice.update(knob5));
-        
+        Object.values(activeVoices).forEach(voice => voice.updateFM(knob5));   
     }
+
+    if(status > 148 && event.data[1] == 75){
+        let v = event.data[2];
+        let norm = iNormalize(v, 0, 127);
+
+        let exp = Math.pow(norm,3);
+
+        knob6 = (exp * 18000) + 250;
+
+        console.log(v, knob6);
+        Object.values(activeVoices).forEach(voice => voice.updateFilterCutoff(knob6));   
+    }
+
+
+
+
 
 }
 
@@ -491,6 +561,9 @@ window.addEventListener('load', initAudioContext, false);
 function initAudioContext(){
     try {
         context = new AudioContext();
+        if(context != null){
+            biquad = context.createBiquadFilter();
+        }
     }
     catch(er){
         alert("web audio not supported!");
@@ -501,7 +574,7 @@ function initAudioContext(){
 
 let attack = 0.05;
 let decay = 1.0;
-let sustain = 0.2;
+let sustain = 0.1;
 let release = 0.3;
 
 
@@ -511,45 +584,56 @@ var Voice = (function(){
         this.oscillators = [];
         this.vca = null;
         this.mod = null;
+        this.filter = null;
 };
 
     Voice.prototype.start = function(){
         const now = context.currentTime;
 
+        //BASIC
         var vco = context.createOscillator();
-        vco.type = 'sine';
+        vco.type = CarrierWave;
         vco.frequency.value = this.frequency;
 
+        //FM
         var mod = context.createOscillator();
-        mod.type = 'triangle';
+        mod.type = ModulatorWave;
         mod.frequency.value = (this.frequency);
-
         var modGain = context.createGain();
-
         modGain.gain.value = knob5;
-
         mod.connect(modGain);
         modGain.connect(vco.frequency);
+
+        //FILTER
+        var filter = context.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = knob6;
+        filter.Q.value = 5.0;
         
+        //ADSR
         var vca = context.createGain();
         vca.gain.cancelScheduledValues(now);    
         vca.gain.setValueAtTime(0.0, now);
-        
-        vca.gain.linearRampToValueAtTime(0.5, now + attack);
-
+        vca.gain.linearRampToValueAtTime(0.25, now + attack);
         vca.gain.linearRampToValueAtTime(sustain, now + attack + decay);
 
-        vco.connect(vca);
+
+        //OUTPUT
+
+        vco.connect(filter);
+
+        filter.connect(vca);
+
         vca.connect(context.destination);
 
         mod.start(now);
-
         vco.start(now);
 
-
+        //VOICE ALLOCATION
         this.oscillators.push(vco);
         this.vca = vca;
         this.mod = modGain;
+        this.filter = filter;
     };
 
     Voice.prototype.stop = function(){
@@ -566,8 +650,12 @@ var Voice = (function(){
         })
     }
 
-    Voice.prototype.update = function(fm){
+    Voice.prototype.updateFM = function(fm){
         this.mod.gain.value = fm;
+    }
+
+    Voice.prototype.updateFilterCutoff = function(cutoff){
+        this.filter.frequency.value = cutoff;
     }
 
     // Voice.prototype.update = function(freq){
