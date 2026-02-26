@@ -1,0 +1,34 @@
+html{
+    overflow: auto;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+}
+
+#bg{
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -3;
+}
+
+#proposalHead{
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    left:50%;
+    transform: translateX(-50%);
+    padding-top: 2%;
+    gap: 2rem;
+}
+
+#proposalText{
+    font-size: 30px;
+    -webkit-text-stroke: 0.4px rgb(0, 0, 0);
+    color:rgb(255, 255, 255);
+}  

@@ -48,6 +48,20 @@ let CarrierWave = 'sine';
 
 let ModulatorWave = 'sine';
 
+let modPitchIndex = 0;
+
+let timeMultiplier = 1;
+
+let modPitches = [
+    0.25,
+    0.5,
+    1,
+    2,
+    4
+];
+
+let modPitch = 1;
+
 function setup(){
     //needed for p5 functions
 }
@@ -148,7 +162,7 @@ function main(){
                 console.log("renderframe init", t);
             }
             t -= start;
-            t *= 0.0001;
+            t *= 0.0001 * timeMultiplier;
             resize();
             gl.clear(gl.COLOR_BUFFER_BIT);
             gl.uniform2f(resolution, canvas.width, canvas.height);
@@ -477,6 +491,22 @@ function onMidiMessage(event){
 
     }
 
+    if(status == 224){
+        if(note == 0 && velocity == 0){
+            modPitchIndex--;
+            if(modPitchIndex <= 0) modPitchIndex = 0;
+            modPitch = modPitches[modPitchIndex];
+            console.log(modPitch);
+
+        }
+        if(note == 127 && velocity == 127){
+            modPitchIndex++;
+            if(modPitchIndex >= modPitches.length) modPitchIndex = modPitches.length - 1;
+            modPitch = modPitches[modPitchIndex];
+            console.log(modPitch);
+        }
+    }
+
 
     //PAD UP
     if(status == 137){
@@ -524,7 +554,8 @@ function onMidiMessage(event){
 
      //knob 5
     if(status > 148 && event.data[1] == 74){
-        knob5 = event.data[2] * 10.0;
+        let v = iNormalize(event.data[2], 0, 127);
+        knob5 = v * 2000.0;
         Object.values(activeVoices).forEach(voice => voice.updateFM(knob5));   
     }
 
@@ -532,16 +563,18 @@ function onMidiMessage(event){
         let v = event.data[2];
         let norm = iNormalize(v, 0, 127);
 
-        let exp = Math.pow(norm,3);
+        let tm = (norm * 0.5) + 0.5;
+
+        
+        let exp = Math.pow(norm,2);
+        
+        timeMultiplier = (exp * 0.5) + 0.5;
 
         knob6 = (exp * 18000) + 250;
 
         console.log(v, knob6);
         Object.values(activeVoices).forEach(voice => voice.updateFilterCutoff(knob6));   
     }
-
-
-
 
 
 }
@@ -598,7 +631,7 @@ var Voice = (function(){
         //FM
         var mod = context.createOscillator();
         mod.type = ModulatorWave;
-        mod.frequency.value = (this.frequency);
+        mod.frequency.value = (this.frequency * modPitch);
         var modGain = context.createGain();
         modGain.gain.value = knob5;
         mod.connect(modGain);
