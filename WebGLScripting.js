@@ -575,8 +575,6 @@ function onMidiMessage(event){
         console.log(v, knob6);
         Object.values(activeVoices).forEach(voice => voice.updateFilterCutoff(knob6));   
     }
-
-
 }
 
 function startLoggingMidiInput(midiAccess){
@@ -649,7 +647,6 @@ var Voice = (function(){
         vca.gain.setValueAtTime(0.0, now);
         vca.gain.linearRampToValueAtTime(0.25, now + attack);
         vca.gain.linearRampToValueAtTime(sustain, now + attack + decay);
-
 
         //OUTPUT
 
