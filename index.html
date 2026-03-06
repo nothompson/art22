@@ -8,14 +8,31 @@
     <link rel = "stylesheet" href = "WebGL.css">
 </head>
 <body>
-    <div class = "buttons">
+    <!-- <div class = "buttons">
          
-         <!-- <img src = "images/pointerleft.png"  onclick="PrevShader()" id = "leftarrow">
+         <img src = "images/pointerleft.png"  onclick="PrevShader()" id = "leftarrow">
 
          <img src = "images/pointer.png" onclick="NextShader()" id = "rightarrow">
 
-         <img src = "images/crosshairs_0018_spiral.png" onclick="RefreshShader()" id = "refresh"> -->
+         <img src = "images/crosshairs_0018_spiral.png" onclick="RefreshShader()" id = "refresh">
 
+      </div> -->
+
+      <div class = "sliders">
+        
+        <div class = "sliderBody">
+          <img src = "images/slider.png" class = "sliderBackground">
+          <img src = "images/slidervalue.png" class = "sliderValue">
+          <img src = "images/sliderdial.png" class = "sliderDial" onmousedown="ChangeSliderValue(event, this)">
+        </div>
+
+
+        <div class = "sliderBody">
+          <img src = "images/slider.png" class = "sliderBackground">
+          <img src = "images/slidervalue.png" class = "sliderValue">
+          <img src = "images/sliderdial.png" class = "sliderDial" onmousedown="ChangeSliderValue(event, this)">
+        </div>
+        
       </div>
 
     <canvas id="canvas"></canvas>

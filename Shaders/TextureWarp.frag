@@ -26,7 +26,7 @@
             // value += noise(freq * x) * amplitude;
 
             // each "octave" is twice the frequency
-            freq *= 2.0 + ((iKnob1 * 2.0) - 1.0);
+            freq *= 2.0 + (iKnob1 - 0.5);
             amplitude *= gain;
         }
         return value;

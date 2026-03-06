@@ -524,9 +524,12 @@ function onMidiMessage(event){
      //knob 2
     if(status > 148 && event.data[1] == 71){
         let v = event.data[2];
-        let out = iNormalize(v, 0, 127);
-        console.log("knob 2", out);
-        iKnob2 = out;
+        let hurst = iNormalize(v, 0, 127);
+        console.log("knob 2", hurst);
+        iKnob2 = 1.0 - hurst;
+
+        let fm = iNormalize(event.data[2], 0, 127) * 2000.0;
+        Object.values(activeVoices).forEach(voice => voice.updateFM(fm));
     }
 
      //knob 3
@@ -606,7 +609,7 @@ function initAudioContext(){
 let attack = 0.05;
 let decay = 1.0;
 let sustain = 0.1;
-let release = 0.3;
+let release = 0.5;
 
 
 var Voice = (function(){
@@ -616,6 +619,9 @@ var Voice = (function(){
         this.vca = null;
         this.mod = null;
         this.filter = null;
+        this.delay = null;
+        this.feedback = null;
+        this.delayWet = null;
 };
 
     Voice.prototype.start = function(){
@@ -648,11 +654,29 @@ var Voice = (function(){
         vca.gain.linearRampToValueAtTime(0.25, now + attack);
         vca.gain.linearRampToValueAtTime(sustain, now + attack + decay);
 
+        //DELAY
+        var delay = context.createDelay();
+        delay.delayTime.value = 0.8;
+
+        var feedback = context.createGain();
+        feedback.gain.value = 0.3;
+
+        var delayWet = context.createGain();
+        delayWet.gain.value = 0.75;
+        
         //OUTPUT
 
+        delay.connect(feedback);
+        feedback.connect(delay);
+
+        // delay.connect(delayWet);
+        
         vco.connect(filter);
 
-        filter.connect(vca);
+        filter.connect(vca);    
+        // filter.connect(delay);
+
+        // delayWet.connect(vca);
 
         vca.connect(context.destination);
 
@@ -661,9 +685,13 @@ var Voice = (function(){
 
         //VOICE ALLOCATION
         this.oscillators.push(vco);
+        this.oscillators.push(mod);
         this.vca = vca;
         this.mod = modGain;
         this.filter = filter;
+        this.delay = delay;
+        this.feedback = feedback;
+        this.delayWet = delayWet;
     };
 
     Voice.prototype.stop = function(){
@@ -726,6 +754,58 @@ function offSine(){
     s.stop(context.currentTime);
 }
 
+//#endregion
+
+
+//#region Interface
+
+let dragging = false;
+
+let xOffset = 0;
+
+let currentDial = null;
+let currentSlider = null;
+
+
+function ChangeSliderValue(event, dial){
+    dragging = true;
+    currentDial = dial;
+    currentSlider = dial.closest(".sliderBody");
+    xOffset = event.clientX - currentDial.getBoundingClientRect().left;
+    event.preventDefault();
+}
+
+document.addEventListener("mousemove", (e) => {
+    if(!dragging || !currentDial) return;
+
+    var rect = currentSlider.getBoundingClientRect();
+    var dialWidth = currentDial.offsetWidth;
+
+    let translate = e.clientX - rect.left - xOffset;
+
+    let minX = 10;
+    let maxX = rect.width - dialWidth - 10;
+
+    translate = Math.max(minX, Math.min(maxX, translate));
+    
+    currentDial.style.left = translate + "px";
+    
+    let sliderValue = iNormalize(translate, minX, maxX);
+    console.log(sliderValue);
+
+    iKnob1 = sliderValue;
+})
+
+document.addEventListener("mouseup", () => {
+    dragging = false;
+    currentDial = null;
+    currentSlider = null;
+})
+
+//horizontal slider
+    //background image decides mouse x and y collider
+    //slider/fill image is is cropped based on mouse x when dragging or when clicked
+    //handle image is positioned based on mouse x when dragging or clicked
 
 //#endregion
 
