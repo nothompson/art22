@@ -18,22 +18,106 @@
 
       </div> -->
 
+      <div class = "visual">
+        <canvas id = "oscillator"></canvas>
+      </div>
+
+      <div class = "adsr">
+
+        <img src = "images/crosshairs_0008_brain.png" class = "adsrHandle" id = "base">
+
+        <img src = "images/crosshairs_0008_brain.png" class = "adsrHandle"  onmousedown = "ChangeSliderValue(event,this)" id = "attack">
+
+        
+        <img src = "images/crosshairs_0008_brain.png" class = "adsrHandle"  onmousedown = "ChangeSliderValue(event,this)" id = "release">
+        
+        <img src = "images/crosshairs_0008_brain.png" class = "adsrHandle"  onmousedown = "ChangeSliderValue(event,this)" id = "decay">
+
+
+        <canvas id = "adsrCanvas"></canvas>
+
+      </div>
+
       <div class = "sliders">
         
         <div class = "sliderBody">
           <img src = "images/slider.png" class = "sliderBackground">
           <img src = "images/slidervalue.png" class = "sliderValue">
-          <img src = "images/sliderdial.png" class = "sliderDial" onmousedown="ChangeSliderValue(event, this)">
+          <img src = "images/sliderdial.png" class = "sliderDial" onmousedown="ChangeSliderValue(event, this)" id = "fbm">
         </div>
 
 
         <div class = "sliderBody">
           <img src = "images/slider.png" class = "sliderBackground">
           <img src = "images/slidervalue.png" class = "sliderValue">
-          <img src = "images/sliderdial.png" class = "sliderDial" onmousedown="ChangeSliderValue(event, this)">
+          <img src = "images/sliderdial.png" class = "sliderDial" onmousedown="ChangeSliderValue(event, this)" id = "hurst">
+        </div>
+
+        <div class = "sliderBody">
+          <img src = "images/slider.png" class = "sliderBackground">
+          <img src = "images/slidervalue.png" class = "sliderValue">
+          <img src = "images/sliderdial.png" class = "sliderDial" onmousedown="ChangeSliderValue(event, this)" id = "filter">
+        </div>
+
+        <div class = "sliderBody">
+          <img src = "images/slider.png" class = "sliderBackground">
+          <img src = "images/slidervalue.png" class = "sliderValue">
+          <img src = "images/sliderdial.png" class = "sliderDial" onmousedown="ChangeSliderValue(event, this)" id = "direction">
         </div>
         
+        <!-- sliders class -->
       </div>
+
+      <div class = "carrierWaveformList">
+        <div class = "waveContainer"  id = "sine" onclick="ChangeCarrierWaveform(this)">
+          <img src = "images/click.png" id = "selected">
+          <img src = "images/sine.png" class = "wave">
+        </div>
+        
+        <div class = "waveContainer"  id = "triangle" onclick="ChangeCarrierWaveform(this)">
+          <img src = "images/click.png" id = "selected">
+          <img src = "images/triangle.png" class = "wave">
+        </div>
+
+          <div class = "waveContainer"  id = "sawtooth" onclick="ChangeCarrierWaveform(this)">
+          <img src = "images/click.png" id = "selected">
+          <img src = "images/saw.png" class = "wave">
+        </div>
+
+        <div class = "waveContainer"  id = "square" onclick="ChangeCarrierWaveform(this)">
+          <img src = "images/click.png" id = "selected">
+          <img src = "images/square.png" class = "wave">
+        </div>
+
+      </div>
+
+      <div class = "modWaveformList">
+        <div class = "waveContainer"  id = "sine" onclick="ChangeModWaveform(this)">
+          <img src = "images/click.png" id = "selected">
+          <img src = "images/sine.png" class = "modWave">
+        </div>
+        
+        <div class = "waveContainer"  id = "triangle" onclick="ChangeModWaveform(this)">
+          <img src = "images/click.png" id = "selected">
+          <img src = "images/triangle.png" class = "modWave">
+        </div>
+
+          <div class = "waveContainer"  id = "sawtooth" onclick="ChangeModWaveform(this)">
+          <img src = "images/click.png" id = "selected">
+          <img src = "images/saw.png" class = "modWave">
+        </div>
+
+        <div class = "waveContainer"  id = "square" onclick="ChangeModWaveform(this)">
+          <img src = "images/click.png" id = "selected">
+          <img src = "images/square.png" class = "modWave">
+        </div>
+
+      </div>
+
+      <div>
+          <img src = "images/brainborderWithBackground.png" class = "waveformBG">
+      </div>
+
 
     <canvas id="canvas"></canvas>
 

@@ -31,10 +31,16 @@ let iKnob3 = 0;
 let knob3Loc;
 
 
-let iKnob4x = 0;
-let iKnob4y = 0;
+let iKnob4x = 1.0;
+let iKnob4y = 1.0;
 
 let context;
+
+let analyze; 
+
+let bufferLength;
+
+let dataArray;
 
 let knob4Loc;
 
@@ -469,7 +475,7 @@ function onMidiMessage(event){
         }
 
         if(note == 54){
-            //pad 4
+            ModulatorWave = 'saw';
         }
 
         if(note == 40){
@@ -485,11 +491,11 @@ function onMidiMessage(event){
         }
 
         if(note == 44){
-            //pad 8
+            CarrierWave = 'saw';
         }
-
-
     }
+
+
 
     if(status == 224){
         if(note == 0 && velocity == 0){
@@ -592,11 +598,17 @@ function startLoggingMidiInput(midiAccess){
 
 window.addEventListener('load', initAudioContext, false);
 
+
 function initAudioContext(){
     try {
         context = new AudioContext();
         if(context != null){
             biquad = context.createBiquadFilter();
+            analyze = context.createAnalyser();
+        }
+        if(analyze != null){
+            bufferLength = analyze.frequencyBinCount;
+            dataArray = new Uint8Array(bufferLength);
         }
     }
     catch(er){
@@ -604,13 +616,44 @@ function initAudioContext(){
     }
 }
 
-//poly sine
+//https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Visualizations_with_Web_Audio_API
 
+let oscillatorCanvas = document.getElementById("oscillator");
+let oscillator = oscillatorCanvas.getContext("2d");
+
+function visualize(){
+    requestAnimationFrame(visualize);
+    
+    if(analyze == null) return;
+    analyze.getByteTimeDomainData(dataArray);
+
+    oscillator.clearRect(0,0,oscillatorCanvas.width, oscillatorCanvas.height);
+
+    oscillator.lineWidth = 2;
+    oscillator.beginPath();
+
+    let slice = oscillatorCanvas.width / bufferLength;
+    let x = 0;
+
+    for(let i = 0; i < bufferLength; i++){
+        let y = (dataArray[i] / 255.0) * oscillatorCanvas.height;
+
+        i == 0 ? oscillator.moveTo(x,y) : oscillator.lineTo(x,y);
+        x += slice;
+    }
+
+    oscillator.lineTo(oscillatorCanvas.width, oscillatorCanvas.height * 0.5);
+    oscillator.stroke();
+}
+
+visualize();
+
+//poly sine
+let gain = 0.25;
 let attack = 0.05;
 let decay = 1.0;
-let sustain = 0.1;
+let sustain = 0.3;
 let release = 0.5;
-
 
 var Voice = (function(){
     function Voice(frequency){
@@ -651,8 +694,8 @@ var Voice = (function(){
         var vca = context.createGain();
         vca.gain.cancelScheduledValues(now);    
         vca.gain.setValueAtTime(0.0, now);
-        vca.gain.linearRampToValueAtTime(0.25, now + attack);
-        vca.gain.linearRampToValueAtTime(sustain, now + attack + decay);
+        vca.gain.linearRampToValueAtTime(gain, now + attack);
+        vca.gain.linearRampToValueAtTime(gain * sustain, now + attack + decay);
 
         //DELAY
         var delay = context.createDelay();
@@ -678,7 +721,9 @@ var Voice = (function(){
 
         // delayWet.connect(vca);
 
-        vca.connect(context.destination);
+        vca.connect(analyze);
+
+        analyze.connect(context.destination);
 
         mod.start(now);
         vco.start(now);
@@ -729,7 +774,6 @@ var Voice = (function(){
 
 })(context);
 
-
 //mono sine
 function sine(){
 
@@ -761,16 +805,100 @@ function offSine(){
 
 let dragging = false;
 
+
 let xOffset = 0;
 
 let currentDial = null;
 let currentSlider = null;
 
+let currentCarrierWave = null;
+let currentModWave = null;
+
+let lastCarrierWave = document.getElementById("sine");
+
+let lastModWave = document.getElementById("sine");
+
+let env = document.getElementById("adsrCanvas");
+
+let adsr = env.getContext("2d");
+
+let baseHandle = document.getElementById("base");
+
+let attackHandle = document.getElementById("attack");
+
+let decayHandle = document.getElementById("decay");
+
+let releaseHandle = document.getElementById("release");
+
+
+function DrawEnvelope(){
+
+    adsr.clearRect(0,0,env.width, env.height);
+
+    adsr.lineWidth = 4;
+    adsr.beginPath();
+
+    adsr.moveTo(baseHandle.offsetLeft + baseHandle.offsetWidth * 0.5, baseHandle.offsetTop + baseHandle.offsetHeight * 0.5);
+    adsr.lineTo(attackHandle.offsetLeft + attackHandle.offsetWidth * 0.5, attackHandle.offsetTop + attackHandle.offsetHeight * 0.5);
+
+    adsr.lineTo(decayHandle.offsetLeft + decayHandle.offsetWidth * 0.5, decayHandle.offsetTop + decayHandle.offsetHeight * 0.5);
+
+    adsr.lineTo(releaseHandle.offsetLeft + releaseHandle.offsetWidth * 0.5, releaseHandle.offsetTop + releaseHandle.offsetHeight * 0.5);
+
+    adsr.stroke();
+}
+
+function InitInterface(){
+    let container = document.querySelector(".adsr");
+    let rect = container.getBoundingClientRect();
+
+    let handleW = baseHandle.offsetWidth;
+    let handleH = baseHandle.offsetHeight;
+
+    let areaW = rect.width;
+    let areaH = rect.height;
+
+    let attackNorm = (attack - 0.01) / 3.0;
+    attackHandle.style.left = iDenormalize(attackNorm, 0, areaW - handleW * 2) + "px";
+    attackHandle.style.top = "0px";
+
+    let decayNorm = (decay - 0.1) / (3.0 - 1.0);
+    let sustainY = (1.0 - sustain);
+
+    decayHandle.style.left = iDenormalize(decayNorm, attackHandle.offsetLeft, areaW - handleW) + "px";
+    decayHandle.style.top = iDenormalize(sustainY, 0, areaH - handleH) + "px";
+
+    let releaseNorm = (release - 0.05) / 3.0;
+    releaseHandle.style.left = iDenormalize(releaseNorm, decayHandle.offsetLeft, areaW - handleW) + "px";
+    releaseHandle.style.top = (areaH - handleH + "px");
+
+    baseHandle.style.left = "0px"
+    baseHandle.style.top = (areaH - handleH) + "px";
+
+    
+
+    DrawEnvelope();
+}
+
+function ChangeCarrierWaveform(wave){
+    lastCarrierWave.firstElementChild.style.display = "none"
+    currentCarrierWave = wave;
+    CarrierWave = currentCarrierWave.id;
+    currentCarrierWave.firstElementChild.style.display = "block"
+    lastCarrierWave = wave;
+}
+
+function ChangeModWaveform(wave){
+    lastModWave.firstElementChild.style.display = "none"
+    currentModWave = wave;
+    ModulatorWave = currentModWave.id;
+    currentModWave.firstElementChild.style.display = "block"
+    lastModWave = wave;
+}
 
 function ChangeSliderValue(event, dial){
     dragging = true;
     currentDial = dial;
-    currentSlider = dial.closest(".sliderBody");
     xOffset = event.clientX - currentDial.getBoundingClientRect().left;
     event.preventDefault();
 }
@@ -778,22 +906,110 @@ function ChangeSliderValue(event, dial){
 document.addEventListener("mousemove", (e) => {
     if(!dragging || !currentDial) return;
 
-    var rect = currentSlider.getBoundingClientRect();
-    var dialWidth = currentDial.offsetWidth;
+    if(currentDial.className == "adsrHandle"){
+        let container = currentDial.closest(".adsr");
+        let rect = container.getBoundingClientRect();
 
-    let translate = e.clientX - rect.left - xOffset;
+        var width = currentDial.offsetWidth;
+        var height = currentDial.offsetHeight;
 
-    let minX = 10;
-    let maxX = rect.width - dialWidth - 10;
+        let translateX = (e.clientX - rect.left) - (width * 0.5);
+        let translateY = (e.clientY - rect.top) - (height * 0.5);
 
-    translate = Math.max(minX, Math.min(maxX, translate));
-    
-    currentDial.style.left = translate + "px";
-    
-    let sliderValue = iNormalize(translate, minX, maxX);
-    console.log(sliderValue);
+        translateX = Math.max(0, Math.min(rect.width - width, translateX));
+        translateY = Math.max(0,Math.min(rect.height - height, translateY));
 
-    iKnob1 = sliderValue;
+
+        if(currentDial.id == "attack"){
+            translateX = Math.min(translateX, decayHandle.offsetLeft);
+            let norm = iNormalize(translateX, 0, rect.width - width * 2);
+
+            attack = (norm * 3.0) + 0.01;
+
+        }
+        else if(currentDial.id == "decay"){
+            translateX = Math.max(translateX, attackHandle.offsetLeft);
+            translateX = Math.min(translateX, releaseHandle.offsetLeft);
+            currentDial.style.top = translateY + "px";
+
+            let normx = iNormalize(translateX, attackHandle.offsetLeft, rect.width - width);
+            let normy = iNormalize(translateY, 0, rect.height - height);
+
+            decay = (normx * (3.0 - 0.1)) + 0.1;
+
+            sustain = 1.0 - normy;
+
+        }
+        else if(currentDial.id == "release"){
+            translateX = Math.max(translateX, decayHandle.offsetLeft);
+            
+            let norm = iNormalize(translateX, decayHandle.offsetLeft, rect.width - width)
+
+            console.log(norm);
+
+            release = (norm * 3.0) + 0.05;
+        }
+        
+        currentDial.style.left = translateX + "px";
+        DrawEnvelope();
+
+    }
+
+    if(currentDial.className == "sliderDial"){
+
+        currentSlider = currentDial.closest(".sliderBody");
+
+        var rect = currentSlider.getBoundingClientRect();
+        var dialWidth = currentDial.offsetWidth;
+
+        let translate = e.clientX - rect.left - xOffset;
+
+        let minX = 10;
+        let maxX = rect.width - dialWidth - 10;
+
+        translate = Math.max(minX, Math.min(maxX, translate));
+        
+        currentDial.style.left = translate + "px";
+        
+        let sliderValue = iNormalize(translate, minX, maxX);
+
+        if(currentDial.id == "fbm"){
+            iKnob1 = sliderValue;
+        }
+
+        if(currentDial.id == "hurst"){
+            iKnob2 = 1.0 - sliderValue;
+
+            let fm = sliderValue * 2000.0;
+            Object.values(activeVoices).forEach(voice => voice.updateFM(fm));
+        }
+
+        if(currentDial.id == "filter"){     
+            let exp = Math.pow(sliderValue,2);
+            
+            timeMultiplier = (exp * 0.5) + 0.5;
+
+            knob6 = (exp * 18000) + 250;
+
+            Object.values(activeVoices).forEach(voice => voice.updateFilterCutoff(knob6));   
+        }
+
+        if(currentDial.id == "direction"){
+            let pi =  3.14159265359;
+            let norm = sliderValue * 360.0;
+
+            // console.log("knob 4", out);
+            let x = cos(norm * pi / 180);
+            let y = sin(norm * pi / 180);
+
+            // console.log("knob4", norm, "vector", x,y);
+            iKnob4x = x;
+            iKnob4y = y;
+        }
+
+    }
+
+
 })
 
 document.addEventListener("mouseup", () => {
@@ -801,6 +1017,8 @@ document.addEventListener("mouseup", () => {
     currentDial = null;
     currentSlider = null;
 })
+
+
 
 //horizontal slider
     //background image decides mouse x and y collider
@@ -831,6 +1049,11 @@ function GetRandomFloat(min, max){
 function iNormalize(input, min, max){
     return ((input - min) / (max - min));
 }
+
+function iDenormalize(input, min, max){
+    return min + input * (max - min);
+}
+
 
 function iLerp(a, b, t){
     return a * (1.0 - t) + b * t;
@@ -907,3 +1130,6 @@ function MidiToFreq(note){
 //#endregion
 
 document.addEventListener('DOMContentLoaded', main);
+window.addEventListener("load", () =>{
+    InitInterface();
+})
