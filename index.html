@@ -18,11 +18,45 @@
 
       </div> -->
 
-      <div class = "visual">
-        <canvas id = "oscillator"></canvas>
+      <div class = "leftPanel">
+
+        <div class = "knobContainer">
+          <img src = "images/knob.png" class = "knob" onmousedown="ChangeSliderValue(event, this)" id = "delayWet">
+        </div>
+
+          <canvas id = "feedback" class = "spriteSlider" onmousedown="ChangeSliderValue(event, this)"></canvas>
+
+         <div class = "knobContainer">
+          <img src = "images/knob.png" class = "knob" onmousedown="ChangeSliderValue(event, this)" id = "delayTime">
+        </div>
+
+        <canvas id = "bitcrush" class = "spriteSlider" onmousedown="ChangeSliderValue(event, this)"></canvas>
+
       </div>
 
-      <div class = "adsr">
+      <div class = "rightPanel">
+
+        <div class = "visualContainer">
+        <div class = "visual">
+          <img src = "images/brainScopeFore.png" id = "brainScopeFore">
+          <canvas id = "oscillator"></canvas>
+          <img src = "images/brainScopeBack.png" id = "brainScopeBack">
+        </div>
+        </div>
+
+        <div class = "sliderBody">
+          <img src = "images/slider.png" class = "sliderBackground">
+          <img src = "images/slidervalue.png" class = "sliderValue">
+          <img src = "images/sliderdial.png" class = "sliderDial" onmousedown="ChangeSliderValue(event, this)" id = "filter">
+        </div>
+
+        <div class = "sliderBody">
+          <img src = "images/slider.png" class = "sliderBackground">
+          <img src = "images/slidervalue.png" class = "sliderValue">
+          <img src = "images/sliderdial.png" class = "sliderDial" onmousedown="ChangeSliderValue(event, this)" id = "q">
+        </div>
+
+              <div class = "adsr">
 
         <img src = "images/crosshairs_0008_brain.png" class = "adsrHandle" id = "base">
 
@@ -37,38 +71,17 @@
         <canvas id = "adsrCanvas"></canvas>
 
       </div>
-
-      <div class = "sliders">
         
+      </div>
+
+    <div class = "bottomPanel">
         <div class = "sliderBody">
           <img src = "images/slider.png" class = "sliderBackground">
           <img src = "images/slidervalue.png" class = "sliderValue">
           <img src = "images/sliderdial.png" class = "sliderDial" onmousedown="ChangeSliderValue(event, this)" id = "fbm">
         </div>
 
-
-        <div class = "sliderBody">
-          <img src = "images/slider.png" class = "sliderBackground">
-          <img src = "images/slidervalue.png" class = "sliderValue">
-          <img src = "images/sliderdial.png" class = "sliderDial" onmousedown="ChangeSliderValue(event, this)" id = "hurst">
-        </div>
-
-        <div class = "sliderBody">
-          <img src = "images/slider.png" class = "sliderBackground">
-          <img src = "images/slidervalue.png" class = "sliderValue">
-          <img src = "images/sliderdial.png" class = "sliderDial" onmousedown="ChangeSliderValue(event, this)" id = "filter">
-        </div>
-
-        <div class = "sliderBody">
-          <img src = "images/slider.png" class = "sliderBackground">
-          <img src = "images/slidervalue.png" class = "sliderValue">
-          <img src = "images/sliderdial.png" class = "sliderDial" onmousedown="ChangeSliderValue(event, this)" id = "direction">
-        </div>
-        
-        <!-- sliders class -->
-      </div>
-
-      <div class = "carrierWaveformList">
+           <div class = "waveformList">
         <div class = "waveContainer"  id = "sine" onclick="ChangeCarrierWaveform(this)">
           <img src = "images/click.png" id = "selected">
           <img src = "images/sine.png" class = "wave">
@@ -89,37 +102,46 @@
           <img src = "images/square.png" class = "wave">
         </div>
 
-      </div>
-
-      <div class = "modWaveformList">
-        <div class = "waveContainer"  id = "sine" onclick="ChangeModWaveform(this)">
+        <div class = "waveContainer"  id = "modSine" onclick="ChangeModWaveform(this)">
           <img src = "images/click.png" id = "selected">
           <img src = "images/sine.png" class = "modWave">
         </div>
         
-        <div class = "waveContainer"  id = "triangle" onclick="ChangeModWaveform(this)">
+        <div class = "waveContainer"  id = "modTriangle" onclick="ChangeModWaveform(this)">
           <img src = "images/click.png" id = "selected">
           <img src = "images/triangle.png" class = "modWave">
         </div>
 
-          <div class = "waveContainer"  id = "sawtooth" onclick="ChangeModWaveform(this)">
+          <div class = "waveContainer"  id = "modSawtooth" onclick="ChangeModWaveform(this)">
           <img src = "images/click.png" id = "selected">
           <img src = "images/saw.png" class = "modWave">
         </div>
 
-        <div class = "waveContainer"  id = "square" onclick="ChangeModWaveform(this)">
+        <div class = "waveContainer"  id = "modSquare" onclick="ChangeModWaveform(this)">
           <img src = "images/click.png" id = "selected">
           <img src = "images/square.png" class = "modWave">
         </div>
 
       </div>
 
-      <div>
+        <div class = "sliderBody">
+          <img src = "images/slider.png" class = "sliderBackground">
+          <img src = "images/slidervalue.png" class = "sliderValue">
+          <img src = "images/sliderdial.png" class = "sliderDial" onmousedown="ChangeSliderValue(event, this)" id = "hurst">
+        </div>
+    </div> 
+
+      <!-- <div>
           <img src = "images/brainborderWithBackground.png" class = "waveformBG">
-      </div>
+      </div> -->
+
+    <!-- <div class = "panel">
+      <img src = "images/panels.png">
+    </div> -->
 
 
     <canvas id="canvas"></canvas>
+
 
     <script src = "WebGLScripting.js"></script>
 

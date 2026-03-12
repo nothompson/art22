@@ -3,11 +3,6 @@
     z-index: -1;
 }
 
-.buttons{
-    cursor: pointer;
-    display: flex;
-    z-index: 1;
-}
 
 #leftarrow{
     position: absolute;
@@ -15,8 +10,8 @@
     left: 5vw;
     width: 75px;
     height: 50px;
-
-     transition: transform 0.1s ease-out;
+    
+    transition: transform 0.1s ease-out;
 }
 
 #rightarrow{
@@ -25,7 +20,7 @@
     right: 5vw;
     width: 75px;
     height: 50px;
-
+    
     transition: transform 0.1s ease-out;
 }
 
@@ -36,42 +31,42 @@
     transform: translateX(-50%);
     width: 50px;
     height: 50px;
-
+    
     transition: transform 0.2s ease-out;
 }
-
-.visual{
-    position: absolute
+.buttons{
+    cursor: pointer;
+    display: flex;
+    z-index: 1;
 }
+
+.visualContainer{
+    position:relative;
+    width: 15vw; 
+    height: 20vw;
+    flex-shrink: 0;
+}
+.visual {
+    position: absolute;
+    inset: 0;
+}
+
+.visual > * {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+#brainScopeBack  { z-index: 1; }
+#oscillator      { z-index: 2; }
+#brainScopeFore  { z-index: 3; pointer-events: none; }
 
 #oscillator{
-    width: 300px;
-    height: 300px;
+    left: 2vw;
+    top: 2vw;
+    width: 8vw;
+    height: 10vw;
 }
-
-#leftarrow:hover{
-    transform: scale(1.25);
-}
-
-#leftarrow:active{
-    transform: scale(1.35);
-}
-
-#rightarrow:hover{
-    transform: scale(1.25);
-}
-
-#rightarrow:active{
-    transform: scale(1.35);
-}
-
-#refresh:hover{
-    transform: translateX(-50%) rotate(-900deg);
-}
-#refresh:active{
-    transform: translateX(-50%) scale(1.25);
-}
-
 .sliders{
     position: absolute;
     bottom: 2.5vh;
@@ -79,28 +74,69 @@
     z-index: 1;
 }
 
-.carrierWaveformList{
-    display: flex;
-    gap:20px;
-    position: absolute;
-    flex: auto;
-    flex-direction: row;
-    bottom: 15vh;
-    left: 50vw;
+.waveformList{
+    display: grid;
+    grid-template-columns: repeat(4,8vw);
+    grid-template-rows: repeat(2,4vw);
+    gap: 1vw;
     z-index: 3;
-    transform: translateX(-50%);
 }
 
-.modWaveformList{
-    display: flex;
-    gap:20px;
+.leftPanel{
+    left: 2vw;
+    top: 50%;
+    transform: translateY(-50%);
     position: absolute;
-    flex: auto;
+    display: flex;
+    gap: 1vw;
+    flex-direction: column;
+    z-index: 2;
+}
+
+.rightPanel{
+    right: 2vw;
+    top: 50%;
+    transform: translateY(-50%);
+    position: absolute;
+    display: flex;
+    gap: 1vw;
+    flex-direction: column;
+    z-index: 2;
+}
+
+.bottomPanel{
+    bottom: 5vh;
+    position: absolute;
+    display: flex;
+    left:17vw;
+    gap: 2vw;
     flex-direction: row;
-    bottom: 2vh;
-    left: 50vw;
-    z-index: 3;
-    transform: translateX(-50%);
+    z-index: 2;
+}
+
+.spriteSlider{
+    z-index: 2;
+    cursor: pointer;
+    display: block;
+}
+
+#feedback{
+    width: 12vw;
+    height: 12vw;
+    transform: translateX(5%);
+}
+
+#bitcrush{
+    width: 14vw;
+    height: 14vw;
+     transform: translateX(-10%);
+}
+
+.knob{
+    cursor: pointer;
+    width: 12vw;
+    height: 12vw;
+    /* transform: translateX(50%); */
 }
 
 .waveformBG{
@@ -118,16 +154,17 @@
 }
 
 .wave{
-    position:relative;
-    width: 80px;
-    height: 80px;
+    width: 100%;
+    height: 100%;
     cursor: pointer;
     transition: transform 0.2s ease-out;
 }
 
 .adsr{
-    position: absolute;
-    right: 2.5vw;
+    position: relative;
+    width: 20vh;
+    height: 20vh;
+    flex-shrink: 0;
 }
 
 
@@ -136,18 +173,22 @@
     position: absolute;
     width: 40px;
     height: 40px;
-    z-index: 1;
+    z-index: 3;
 
 }
 
 #adsrCanvas{
-    width: 300px;
-    height: 150px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
 }
 
 #base{
     position: absolute;
-    top: 110px;
+    bottom: 10vh;
 }
 
 
@@ -163,9 +204,8 @@
 }
 
 .modWave{
-    position:relative;
-    width: 80px;
-    height: 80px;
+    width: 100%;
+    height: 100%;
     cursor: pointer;
     transform: scaleX(-1);
     transition: transform 0.2s ease-out;
@@ -174,9 +214,9 @@
 #selected{
     display: none;
     position:absolute;
-    width: 110px;
-    height: 110px;
-    transform: translateX(-15%) translateY(-10%);
+    width: 10vw;
+    height: 5vw;
+    transform: translateX(-10%) translateY(-10%);
 }
 
 
@@ -191,32 +231,47 @@
 
 .sliderBody{
     position: relative;
-    width: 200px;
-    height: 100px;
+    top: 3vh;
+    width: 12vw;
+    height: 6vw;
 }
 
 .sliderBackground{
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 200px;
-    height: 100px;
+    inset: 0;
+    width: 100%;
+    height: 100%;
      /* transition: transform 0.1s ease-out; */
 }
 .sliderValue{
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 200px;
-    height: 100px;
+    inset: 0;
+    width: 100%;
+    height: 100%;
      /* transition: transform 0.1s ease-out; */
 }
 .sliderDial{
     position: absolute;
     cursor: pointer;
-    top: 25px;
-    left: 10px;
-    width: 50px;
-    height: 50px;
+    top: 25%;
+    left: 5%;
+    width: 25%;
+    height: 50%;
      /* transition: transform 0.1s ease-out; */
 }
+
+.panel {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.panel img {
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+    display: block;
+}
+
+/* https://codesandbox.io/p/sandbox/animated-sprite-sheet-m2s46x?file=%2Fsrc%2Fstyles.css */

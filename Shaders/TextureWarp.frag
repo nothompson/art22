@@ -55,7 +55,7 @@
             fbm(p + vec2(0.0 + iTime * iKnob4.x,0.0 + iTime  * iKnob4.y) + q + iValue * 0.1, H);
         
         float sig = 
-            fbm(p + r * 1.0 + (sin(iValue) * iKnob3 * 5.0),H);
+            fbm(p + r * 1.0 + sin(iValue),H);
         
         return sig;
     }
